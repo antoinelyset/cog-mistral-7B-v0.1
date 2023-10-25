@@ -1,6 +1,8 @@
 # Configuration for Cog ⚙️
 # Reference: https://github.com/replicate/cog/blob/main/docs/yaml.md
 
+image: "r8.im/antoinelyset/openhermes-2-mistral-7b"
+
 build:
   # set to true if your model requires a GPU
   gpu: true
@@ -9,7 +11,8 @@ build:
   python_packages:
     - "torch==2.0.0"
     - "torchvision"
-    - "transformers"
+    - "transformers[sentencepiece]"
+    - "tensorizer"
 
 # predict.py defines how predictions are run on your model
 predict: "predict.py:Predictor"
