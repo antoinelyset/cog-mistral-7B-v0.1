@@ -1,13 +1,18 @@
 # Prediction interface for Cog ⚙️
 # https://github.com/replicate/cog/blob/main/docs/python.md
 
-from cog import BasePredictor, Input
+import os
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from cog import BasePredictor, Input
+from tensorizer import TensorDeserializer
+from tensorizer.utils import no_init_or_tensor
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
 
 MODEL_NAME = "teknium/OpenHermes-2-Mistral-7B"
 MODEL_CACHE = "model-cache"
 TOKEN_CACHE = "token-cache"
+TENSORIZED_MODEL_NAME = f"{MODEL_NAME.split('/')[-1]}.tensors"
+TENSORIZED_MODEL_PATH = os.path.join(MODEL_CACHE, TENSORIZED_MODEL_NAME)
 
 class Predictor(BasePredictor):
     def setup(self) -> None:
@@ -16,12 +21,13 @@ class Predictor(BasePredictor):
             MODEL_NAME,
             cache_dir=TOKEN_CACHE
         )
-        self.model = AutoModelForCausalLM.from_pretrained(
-            MODEL_NAME,
-            torch_dtype=torch.float16,
-            cache_dir=MODEL_CACHE
-        ).to('cuda')
-
+        config = AutoConfig.from_pretrained(MODEL_NAME)
+        with no_init_or_tensor():
+            self.model = AutoModelForCausalLM.from_config(config)
+        deserializer = TensorDeserializer(os.path.join(MODEL_CACHE, TENSORIZED_MODEL_NAME), plaid_mode=True)
+        deserializer.load_into_module(self.model)
+        deserializer.close()
+        self.model.eval()
 
     def predict(
         self,
