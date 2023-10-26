@@ -6,7 +6,7 @@ image: "r8.im/antoinelyset/openhermes-2-mistral-7b"
 build:
   # set to true if your model requires a GPU
   gpu: true
-  cuda: "12.3"
+  cuda: "12.2"
   python_version: "3.12"
   python_packages:
     - "torch==2.1.0"
