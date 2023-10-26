@@ -9,7 +9,7 @@ build:
   cuda: "11.8"
   python_version: "3.12"
   python_packages:
-    - "torch=2.1.0"
+    - "torch==2.1.0"
     - "torchvision"
     - "transformers[sentencepiece]"
     - "tensorizer"
