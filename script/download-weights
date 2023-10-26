@@ -4,12 +4,12 @@ import os
 import sys
 import torch
 from tensorizer import TensorSerializer
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
 
 # append project directory to path so predict.py can be imported
 sys.path.append('.')
 
-from predict import MODEL_NAME, MODEL_CACHE, TOKEN_CACHE, TENSORIZED_MODEL_PATH
+from predict import MODEL_NAME, TOKEN_CACHE, TENSORIZED_MODEL_PATH, CONFIG_CACHE
 
 tokenizer = AutoTokenizer.from_pretrained(
     MODEL_NAME,
@@ -18,8 +18,8 @@ tokenizer = AutoTokenizer.from_pretrained(
 model = AutoModelForCausalLM.from_pretrained(
     MODEL_NAME,
     torch_dtype=torch.float16,
-    cache_dir=MODEL_CACHE
 )
+config = AutoConfig.from_pretrained(MODEL_NAME, cache_dir=CONFIG_CACHE)
 
 serializer = TensorSerializer(TENSORIZED_MODEL_PATH)
 serializer.write_module(model)

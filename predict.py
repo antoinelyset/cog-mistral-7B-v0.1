@@ -11,6 +11,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
 MODEL_NAME = "teknium/OpenHermes-2-Mistral-7B"
 MODEL_CACHE = "model-cache"
 TOKEN_CACHE = "token-cache"
+CONFIG_CACHE = "config-cache"
 TENSORIZED_MODEL_NAME = f"{MODEL_NAME.split('/')[-1]}.tensors"
 TENSORIZED_MODEL_PATH = os.path.join(MODEL_CACHE, TENSORIZED_MODEL_NAME)
 
@@ -21,7 +22,7 @@ class Predictor(BasePredictor):
             MODEL_NAME,
             cache_dir=TOKEN_CACHE
         )
-        config = AutoConfig.from_pretrained(MODEL_NAME)
+        config = AutoConfig.from_pretrained(MODEL_NAME, cache_dir=CONFIG_CACHE)
         with no_init_or_tensor():
             self.model = AutoModelForCausalLM.from_config(config)
         deserializer = TensorDeserializer(os.path.join(MODEL_CACHE, TENSORIZED_MODEL_NAME), plaid_mode=True)
