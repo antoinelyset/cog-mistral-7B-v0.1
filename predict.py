@@ -33,13 +33,30 @@ class Predictor(BasePredictor):
 
     def predict(
         self,
-        messages: str = Input(description="The JSON string of the messages (array of objects with role/content like OpenAI) to predict on"),
-        max_new_tokens: int = Input(description="Max new tokens", ge=0, le=1000000000000000019884624838656, default=512),
+        prompt: str = Input(description="The JSON stringified of the messages (array of objects with role/content like OpenAI) to predict on"),
+        max_new_tokens: int = Input(description="Max new tokens", ge=1, default=512),
+        temperature: float = Input(
+            description="Adjusts randomness of outputs, greater than 1 is random and 0 is deterministic, 0.75 is a good starting value.",
+            ge=0.01,
+            le=5,
+            default=0.75,
+        ),
+        top_p: float = Input(
+            description="When decoding text, samples from the top p percentage of most likely tokens; lower to ignore less likely tokens",
+            ge=0.0,
+            le=1.0,
+            default=0.9,
+        ),
+        top_k: int = Input(
+            description="When decoding text, samples from the top k most likely tokens; lower to ignore less likely tokens",
+            ge=0,
+            default=50,
+        ),
     ) -> str:
         """Run a single prediction on the model"""
-        prompt = self.tokenizer.apply_chat_template(json.loads(messages), tokenize=False, add_generation_prompt=True)
+        messages = self.tokenizer.apply_chat_template(json.loads(prompt), tokenize=False, add_generation_prompt=True)
         encodeds = self.tokenizer(
-            prompt,
+            messages,
             return_tensors="pt",
             add_special_tokens=False
         )
@@ -47,6 +64,9 @@ class Predictor(BasePredictor):
         generated_ids = self.model.generate(
             **model_inputs,
             max_new_tokens=max_new_tokens,
+            temperature=temperature,
+            top_p=top_p,
+            top_k=top_k,
             do_sample=True
         )
         decoded = self.tokenizer.batch_decode(generated_ids)

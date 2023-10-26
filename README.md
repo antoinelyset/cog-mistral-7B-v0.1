@@ -8,4 +8,4 @@ First, download the pre-trained weights:
 
 Then, you can run predictions:
 
-    og predict -i prompt="Explain in a short paragraph quantu field theory to a high school student"
+    cog predict -i prompt="Explain in a short paragraph quantu field theory to a high school student"
