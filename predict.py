@@ -3,6 +3,7 @@
 
 import os
 import torch
+import json
 from cog import BasePredictor, Input
 from tensorizer import TensorDeserializer
 from tensorizer.utils import no_init_or_tensor
@@ -32,10 +33,11 @@ class Predictor(BasePredictor):
 
     def predict(
         self,
-        prompt: str = Input(description="Input prompt not chat template applied"),
+        messages: str = Input(description="The JSON string of the messages (array of objects with role/content like OpenAI) to predict on"),
         max_new_tokens: int = Input(description="Max new tokens", ge=0, le=1000000000000000019884624838656, default=512),
     ) -> str:
         """Run a single prediction on the model"""
+        prompt = self.tokenizer.apply_chat_template(json.loads(messages), tokenize=False, add_generation_prompt=True)
         encodeds = self.tokenizer(
             prompt,
             return_tensors="pt",
