@@ -59,8 +59,7 @@ class Predictor(BasePredictor):
         messages = self.tokenizer.apply_chat_template(json.loads(prompt), tokenize=False, add_generation_prompt=True)
         tokens_in = self.tokenizer(
             messages,
-            return_tensors="pt",
-            add_special_tokens=False
+            return_tensors="pt"
         ).input_ids.to('cuda')
         streamer = TextIteratorStreamer(self.tokenizer, timeout=30.0, skip_prompt=True, skip_special_tokens=True)
         generate_kwargs = dict(
