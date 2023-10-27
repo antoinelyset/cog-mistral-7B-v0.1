@@ -61,7 +61,7 @@ class Predictor(BasePredictor):
             messages,
             return_tensors="pt"
         ).input_ids.to('cuda')
-        streamer = TextIteratorStreamer(self.tokenizer, timeout=30.0, skip_prompt=True, skip_special_tokens=True)
+        streamer = TextIteratorStreamer(self.tokenizer, timeout=600.0, skip_prompt=True, skip_special_tokens=True)
         generate_kwargs = dict(
             input_ids=tokens_in,
             streamer=streamer,
