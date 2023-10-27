@@ -4,10 +4,12 @@
 import os
 import torch
 import json
-from cog import BasePredictor, Input
+from cog import BasePredictor, Input, ConcatenateIterator
 from tensorizer import TensorDeserializer
 from tensorizer.utils import no_init_or_tensor
-from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig, TextIteratorStreamer
+from threading import Thread
+
 
 MODEL_NAME = "teknium/OpenHermes-2-Mistral-7B"
 MODEL_CACHE = "model-cache"
@@ -52,23 +54,25 @@ class Predictor(BasePredictor):
             ge=0,
             default=50,
         ),
-    ) -> str:
+    ) -> ConcatenateIterator:
         """Run a single prediction on the model"""
         messages = self.tokenizer.apply_chat_template(json.loads(prompt), tokenize=False, add_generation_prompt=True)
-        encodeds = self.tokenizer(
+        tokens_in = self.tokenizer(
             messages,
             return_tensors="pt",
             add_special_tokens=False
-        )
-        model_inputs = encodeds.to('cuda')
-        generated_ids = self.model.generate(
-            **model_inputs,
+        ).input_ids.to('cuda')
+        streamer = TextIteratorStreamer(self.tokenizer, timeout=30.0, skip_prompt=True, skip_special_tokens=True)
+        generate_kwargs = dict(
+            input_ids=tokens_in,
+            streamer=streamer,
+            do_sample=True,
             max_new_tokens=max_new_tokens,
             temperature=temperature,
             top_p=top_p,
             top_k=top_k,
-            do_sample=True
         )
-        decoded = self.tokenizer.batch_decode(generated_ids)
-        result = decoded[0]
-        return result
+        t = Thread(target=self.model.generate, kwargs=generate_kwargs)
+        t.start()
+        for out in streamer:
+            yield out
