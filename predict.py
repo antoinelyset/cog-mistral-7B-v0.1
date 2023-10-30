@@ -30,7 +30,7 @@ class Predictor(BasePredictor):
             tokenizer=TOKENIZER_MODEL_NAME,
             quantization="awq",
             dtype="float16",
-            # gpu_memory_utilization=0.2
+            gpu_memory_utilization=0.2
         )
         self.engine = AsyncLLMEngine.from_engine_args(args)
 
