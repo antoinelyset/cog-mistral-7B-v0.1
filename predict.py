@@ -3,12 +3,15 @@
 
 import torch
 import json
+import os
 from cog import BasePredictor, Input, ConcatenateIterator
 from transformers import AutoTokenizer
 from vllm.engine.arg_utils import AsyncEngineArgs
 from vllm.engine.async_llm_engine import AsyncLLMEngine
 from vllm.sampling_params import SamplingParams
 
+# Smaller chunk size to avoid OOM
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
 
 MODEL_NAME = "TheBloke/OpenHermes-2-Mistral-7B-AWQ"
 TOKENIZER_MODEL_NAME = "teknium/OpenHermes-2-Mistral-7B"
@@ -26,8 +29,8 @@ class Predictor(BasePredictor):
             model=MODEL_NAME,
             tokenizer=TOKENIZER_MODEL_NAME,
             quantization="awq",
-            dtype="half",
-            gpu_memory_utilization=0.8
+            dtype="float16",
+            # gpu_memory_utilization=0.2
         )
         self.engine = AsyncLLMEngine.from_engine_args(args)
 
