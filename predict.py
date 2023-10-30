@@ -26,7 +26,7 @@ class Predictor(BasePredictor):
             model=MODEL_NAME,
             tokenizer=TOKENIZER_MODEL_NAME,
             quantization="awq",
-            dtype="float16",
+            dtype="half",
             gpu_memory_utilization=0.8
         )
         self.engine = AsyncLLMEngine.from_engine_args(args)
