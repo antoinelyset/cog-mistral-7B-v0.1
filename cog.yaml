@@ -12,7 +12,7 @@ build:
     - "torch==2.0.0"
     - "torchvision"
     - "transformers[sentencepiece]"
-    - "tensorizer"
+    - "vllm"
 
 # predict.py defines how predictions are run on your model
 predict: "predict.py:Predictor"
