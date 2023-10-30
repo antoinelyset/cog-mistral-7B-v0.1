@@ -1,37 +1,35 @@
 # Prediction interface for Cog ⚙️
 # https://github.com/replicate/cog/blob/main/docs/python.md
 
-import os
 import torch
 import json
 from cog import BasePredictor, Input, ConcatenateIterator
-from tensorizer import TensorDeserializer
-from tensorizer.utils import no_init_or_tensor
-from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig, TextIteratorStreamer
-from threading import Thread
+from transformers import AutoTokenizer
+from vllm.engine.arg_utils import AsyncEngineArgs
+from vllm.engine.async_llm_engine import AsyncLLMEngine
+from vllm.sampling_params import SamplingParams
 
 
-MODEL_NAME = "teknium/OpenHermes-2-Mistral-7B"
+MODEL_NAME = "TheBloke/OpenHermes-2-Mistral-7B-AWQ"
+TOKENIZER_MODEL_NAME = "teknium/OpenHermes-2-Mistral-7B"
 MODEL_CACHE = "model-cache"
 TOKEN_CACHE = "token-cache"
-CONFIG_CACHE = "config-cache"
-TENSORIZED_MODEL_NAME = f"{MODEL_NAME.split('/')[-1]}.tensors"
-TENSORIZED_MODEL_PATH = os.path.join(MODEL_CACHE, TENSORIZED_MODEL_NAME)
 
 class Predictor(BasePredictor):
     def setup(self) -> None:
         """Load the model into memory to make running multiple predictions efficient"""
         self.tokenizer = AutoTokenizer.from_pretrained(
-            MODEL_NAME,
+            TOKENIZER_MODEL_NAME,
             cache_dir=TOKEN_CACHE
         )
-        config = AutoConfig.from_pretrained(MODEL_NAME, cache_dir=CONFIG_CACHE)
-        with no_init_or_tensor():
-            self.model = AutoModelForCausalLM.from_config(config)
-        deserializer = TensorDeserializer(os.path.join(MODEL_CACHE, TENSORIZED_MODEL_NAME), plaid_mode=True)
-        deserializer.load_into_module(self.model)
-        deserializer.close()
-        self.model.eval()
+        args = AsyncEngineArgs(
+            model=MODEL_NAME,
+            tokenizer=TOKENIZER_MODEL_NAME,
+            quantization="awq",
+            dtype="float16"
+        )
+        self.engine = AsyncLLMEngine.from_engine_args(args)
+
 
     def predict(
         self,
@@ -54,24 +52,21 @@ class Predictor(BasePredictor):
             ge=0,
             default=50,
         ),
+        use_beam_search: bool = Input(
+            description="Whether to use beam search instead of sampling",
+            default=False,
+        ),
     ) -> ConcatenateIterator:
         """Run a single prediction on the model"""
-        messages = self.tokenizer.apply_chat_template(json.loads(prompt), tokenize=False, add_generation_prompt=True)
-        tokens_in = self.tokenizer(
-            messages,
-            return_tensors="pt"
-        ).input_ids.to('cuda')
-        streamer = TextIteratorStreamer(self.tokenizer, timeout=600.0, skip_prompt=True, skip_special_tokens=True)
-        generate_kwargs = dict(
-            input_ids=tokens_in,
-            streamer=streamer,
-            do_sample=True,
-            max_new_tokens=max_new_tokens,
+        promt_formatted = self.tokenizer.apply_chat_template(json.loads(prompt), tokenize=False, add_generation_prompt=True)
+        sampling_params = SamplingParams(
             temperature=temperature,
             top_p=top_p,
             top_k=top_k,
+            max_tokens=max_new_tokens,
+            use_beam_search=use_beam_search,
         )
-        t = Thread(target=self.model.generate, kwargs=generate_kwargs)
-        t.start()
-        for out in streamer:
-            yield out
+        outputs = self.engine.generate(promt_formatted, sampling_params)
+        for output in outputs:
+            generated_text = output.outputs[-1].text
+            yield generated_text
