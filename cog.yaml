@@ -13,6 +13,8 @@ build:
     - "torchvision"
     - "transformers[sentencepiece]"
     - "tensorizer"
+  run:
+    - ./scripts/download
 
 # predict.py defines how predictions are run on your model
 predict: "predict.py:Predictor"
