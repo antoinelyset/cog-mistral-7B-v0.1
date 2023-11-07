@@ -13,7 +13,7 @@ build:
     - "torchvision"
     - "transformers[sentencepiece]"
     - "tensorizer"
-    - "fastchat"
+    - "fschat[model_worker]"
 
 # predict.py defines how predictions are run on your model
 predict: "predict.py:Predictor"
