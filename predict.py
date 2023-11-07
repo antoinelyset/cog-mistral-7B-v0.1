@@ -11,7 +11,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig, TextIt
 from threading import Thread
 
 
-MODEL_NAME = "teknium/OpenHermes-2-Mistral-7B"
+MODEL_NAME = "teknium/OpenHermes-2.5-Mistral-7B"
 MODEL_CACHE = "model-cache"
 TOKEN_CACHE = "token-cache"
 CONFIG_CACHE = "config-cache"
