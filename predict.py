@@ -4,7 +4,7 @@
 import os
 import torch
 import json
-from fastchat.conversation import get_conv_template
+from fastchat.conversation import Conversation, get_conv_template
 from cog import BasePredictor, Input, ConcatenateIterator
 from tensorizer import TensorDeserializer
 from tensorizer.utils import no_init_or_tensor
