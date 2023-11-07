@@ -4,6 +4,7 @@
 import os
 import torch
 import json
+from fastchat.conversation import get_conv_template
 from cog import BasePredictor, Input, ConcatenateIterator
 from tensorizer import TensorDeserializer
 from tensorizer.utils import no_init_or_tensor
@@ -56,9 +57,28 @@ class Predictor(BasePredictor):
         ),
     ) -> ConcatenateIterator:
         """Run a single prediction on the model"""
-        messages = self.tokenizer.apply_chat_template(json.loads(prompt), tokenize=False, add_generation_prompt=True)
+        conv = get_conv_template("openchat_3.5")
+        system_message_set = False
+        messages = json.loads(prompt)
+        for message in messages:
+            msg_role = message["role"]
+            if msg_role == "system":
+                # Hack to handle multiple system messages
+                if system_message_set:
+                    conv.append_message(conv.roles[1], message["content"])
+                else:
+                    conv.set_system_message(message["content"])
+                    system_message_set = True
+            elif msg_role == "user":
+                conv.append_message(conv.roles[0], message["content"])
+            elif msg_role == "assistant":
+                conv.append_message(conv.roles[1], message["content"])
+            else:
+                raise ValueError(f"Unknown role: {msg_role}")
+        conv.append_message(conv.roles[1], None)
+        text_prompt = conv.get_prompt()
         tokens_in = self.tokenizer(
-            messages,
+            text_prompt,
             return_tensors="pt"
         ).input_ids.to('cuda')
         streamer = TextIteratorStreamer(self.tokenizer, timeout=600.0, skip_prompt=True, skip_special_tokens=True)
