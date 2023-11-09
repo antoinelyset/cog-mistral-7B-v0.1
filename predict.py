@@ -6,8 +6,7 @@ import json
 import os
 from cog import BasePredictor, Input, ConcatenateIterator
 from transformers import AutoTokenizer
-from vllm.engine.arg_utils import AsyncEngineArgs
-from vllm.engine.async_llm_engine import AsyncLLMEngine
+from vllm import LLMEngine, EngineArgs
 from vllm.sampling_params import SamplingParams
 
 MODEL_NAME = "TheBloke/OpenHermes-2-Mistral-7B-AWQ"
@@ -23,17 +22,17 @@ class Predictor(BasePredictor):
             TOKENIZER_MODEL_NAME,
             cache_dir=TOKEN_CACHE
         )
-        args = AsyncEngineArgs(
+        args = EngineArgs(
             model=MODEL_NAME,
             tokenizer=TOKENIZER_MODEL_NAME,
             quantization="awq",
             dtype="float16",
             max_model_len=4096,
         )
-        self.engine = AsyncLLMEngine.from_engine_args(args)
+        self.engine = LLMEngine.from_engine_args(args)
         self.request_id = 0
 
-    async def predict(
+    def predict(
         self,
         prompt: str = Input(
             description="The JSON stringified of the messages (array of objects with role/content like OpenAI) to predict on"),
@@ -60,7 +59,7 @@ class Predictor(BasePredictor):
             description="Whether to use beam search instead of sampling",
             default=False,
         ),
-    ) -> ConcatenateIterator:
+    ) -> ConcatenateIterator[str]:
         """Run a single prediction on the model"""
         promt_formatted = self.tokenizer.apply_chat_template(
             json.loads(prompt), tokenize=False, add_generation_prompt=True)
@@ -74,10 +73,7 @@ class Predictor(BasePredictor):
         self.request_id += 1
         outputs = self.engine.generate(
             promt_formatted, sampling_params, self.request_id)
-        num_returned = 0
-        async for request_output in outputs:
-            text_outputs = [output.text for output in request_output.outputs]
-            assert len(text_outputs) == 1
-            text_output = text_outputs[0][num_returned:]
-            yield text_output
-            num_returned += len(text_output)
+        for output in outputs:
+            prompt = output.prompt
+            generated_text = output.outputs[0].text
+            yield generated_text
