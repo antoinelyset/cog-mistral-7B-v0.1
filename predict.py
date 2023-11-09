@@ -6,7 +6,7 @@ import json
 import os
 from cog import BasePredictor, Input, ConcatenateIterator
 from transformers import AutoTokenizer
-from vllm import LLMEngine, EngineArgs
+from vllm import LLM
 from vllm.sampling_params import SamplingParams
 
 MODEL_NAME = "TheBloke/OpenHermes-2-Mistral-7B-AWQ"
@@ -22,15 +22,13 @@ class Predictor(BasePredictor):
             TOKENIZER_MODEL_NAME,
             cache_dir=TOKEN_CACHE
         )
-        args = EngineArgs(
+        self.engine = LLM(
             model=MODEL_NAME,
             tokenizer=TOKENIZER_MODEL_NAME,
             quantization="awq",
             dtype="float16",
             max_model_len=4096,
         )
-        self.engine = LLMEngine.from_engine_args(args)
-        self.request_id = 0
 
     def predict(
         self,
@@ -70,9 +68,7 @@ class Predictor(BasePredictor):
             max_tokens=max_new_tokens,
             use_beam_search=use_beam_search,
         )
-        self.request_id += 1
-        outputs = self.engine.generate(
-            promt_formatted, sampling_params, self.request_id)
+        outputs = self.engine.generate(promt_formatted, sampling_params)
         for output in outputs:
             prompt = output.prompt
             generated_text = output.outputs[0].text
