@@ -1,7 +1,7 @@
 # Configuration for Cog ⚙️
 # Reference: https://github.com/replicate/cog/blob/main/docs/yaml.md
 
-image: "r8.im/antoinelyset/openhermes-2-mistral-7b"
+image: "r8.im/antoinelyset/openhermes-2.5-mistral-7b-awq"
 
 build:
   # set to true if your model requires a GPU
