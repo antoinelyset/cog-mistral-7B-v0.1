@@ -33,7 +33,7 @@ class Predictor(BasePredictor):
         self.engine = AsyncLLMEngine.from_engine_args(args)
         self.request_id = 0
 
-    def predict(
+    async def predict(
         self,
         prompt: str = Input(
             description="The JSON stringified of the messages (array of objects with role/content like OpenAI) to predict on"),
@@ -74,6 +74,6 @@ class Predictor(BasePredictor):
         self.request_id += 1
         outputs = self.engine.generate(
             promt_formatted, sampling_params, self.request_id)
-        for output in outputs:
+        async for output in outputs:
             generated_text = output.outputs[-1].text
             yield generated_text
