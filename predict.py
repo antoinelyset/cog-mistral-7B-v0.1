@@ -74,6 +74,10 @@ class Predictor(BasePredictor):
         self.request_id += 1
         outputs = self.engine.generate(
             promt_formatted, sampling_params, self.request_id)
-        async for output in outputs:
-            generated_text = output.outputs[-1].text
-            yield generated_text
+        num_returned = 0
+        async for request_output in outputs:
+            text_outputs = [output.text for output in request_output.outputs]
+            assert len(text_outputs) == 1
+            text_output = text_outputs[0][num_returned:]
+            yield text_output
+            num_returned += len(text_output)
