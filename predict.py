@@ -10,13 +10,11 @@ from vllm.engine.arg_utils import AsyncEngineArgs
 from vllm.engine.async_llm_engine import AsyncLLMEngine
 from vllm.sampling_params import SamplingParams
 
-# Smaller chunk size to avoid OOM
-os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
-
 MODEL_NAME = "TheBloke/OpenHermes-2-Mistral-7B-AWQ"
 TOKENIZER_MODEL_NAME = "teknium/OpenHermes-2-Mistral-7B"
 MODEL_CACHE = "model-cache"
 TOKEN_CACHE = "token-cache"
+
 
 class Predictor(BasePredictor):
     def setup(self) -> None:
@@ -30,15 +28,16 @@ class Predictor(BasePredictor):
             tokenizer=TOKENIZER_MODEL_NAME,
             quantization="awq",
             dtype="float16",
-            gpu_memory_utilization=0.2
+            max_model_len=4096,
         )
         self.engine = AsyncLLMEngine.from_engine_args(args)
 
-
     def predict(
         self,
-        prompt: str = Input(description="The JSON stringified of the messages (array of objects with role/content like OpenAI) to predict on"),
-        max_new_tokens: int = Input(description="Max new tokens", ge=1, default=512),
+        prompt: str = Input(
+            description="The JSON stringified of the messages (array of objects with role/content like OpenAI) to predict on"),
+        max_new_tokens: int = Input(
+            description="Max new tokens", ge=1, default=512),
         temperature: float = Input(
             description="Adjusts randomness of outputs, greater than 1 is random and 0 is deterministic, 0.75 is a good starting value.",
             ge=0.01,
@@ -62,7 +61,8 @@ class Predictor(BasePredictor):
         ),
     ) -> ConcatenateIterator:
         """Run a single prediction on the model"""
-        promt_formatted = self.tokenizer.apply_chat_template(json.loads(prompt), tokenize=False, add_generation_prompt=True)
+        promt_formatted = self.tokenizer.apply_chat_template(
+            json.loads(prompt), tokenize=False, add_generation_prompt=True)
         sampling_params = SamplingParams(
             temperature=temperature,
             top_p=top_p,
