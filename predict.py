@@ -31,6 +31,7 @@ class Predictor(BasePredictor):
             max_model_len=4096,
         )
         self.engine = AsyncLLMEngine.from_engine_args(args)
+        self.request_id = 0
 
     def predict(
         self,
@@ -70,7 +71,9 @@ class Predictor(BasePredictor):
             max_tokens=max_new_tokens,
             use_beam_search=use_beam_search,
         )
-        outputs = self.engine.generate(promt_formatted, sampling_params)
+        self.request_id += 1
+        outputs = self.engine.generate(
+            promt_formatted, sampling_params, self.request_id)
         for output in outputs:
             generated_text = output.outputs[-1].text
             yield generated_text
